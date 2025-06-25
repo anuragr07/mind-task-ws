@@ -27,8 +27,11 @@ web-services/
 │   │   ├── taskService.ts
 │   │   └── labelService.ts
 
-│   ├── models/             # Prisma client helpers (optional wrappers if needed)
+│   ├── models/             # Models for tables (Prisma helper wrappers)
 │   │   └── prismaClient.ts
+
+│   ├── db/
+│   │   └── db.ts           # Prisma client (singleton)
 
 │   ├── middlewares/        # Express middlewares (auth, error handling, etc.)
 │   ├── types/              # TypeScript types/interfaces

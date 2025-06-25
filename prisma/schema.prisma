@@ -1,0 +1,130 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
+// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+
+generator client {
+    provider = "prisma-client-js"
+    output   = "../src/generated/prisma"
+}
+
+datasource db {
+    provider = "postgresql"
+    url      = env("DATABASE_URL")
+}
+
+model User {
+    // Fields
+    id        String   @id @default(uuid())
+    name      String
+    email     String   @unique
+    password  String
+    avatarUrl String?
+    createdAt DateTime @default(now())
+    updatedAt DateTime @default(now())
+
+    // Relations
+
+    // Backward Relations
+    oauthAccounts OAuthAccount[]
+    labels Label[]
+    tasks Task[]
+
+    // Indexes
+    @@index([email])
+    @@index([name])
+}
+
+model OAuthAccount {
+    id                Int    @id @default(autoincrement())
+    provider          String
+    providerAccountId String
+    userId            String
+    accessToken       String?
+    refreshToken      String?
+    expiresAt         Int?
+    createdAt         DateTime @default(now())
+    updatedAt         DateTime @default(now())
+
+    // Relations
+    user              User    @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Constraints
+    @@unique([provider, providerAccountId])
+
+    // Indexes
+    @@index([provider])
+    @@index([providerAccountId])
+    @@index([userId])
+}
+
+model Label {
+    // Fields
+    id        String   @id @default(uuid())
+    name      String   @unique
+    isSystemDefined Boolean   @default(true)
+    createdBy String?
+    createdAt DateTime @default(now())
+
+    // Relations
+    user User? @relation(fields: [createdBy], references: [id], onDelete: Cascade)
+
+    // Backward Relations
+    aiClassifications AiClassification[]
+    tasks Task[]
+
+    // constraints
+
+    // Indexes
+    @@index([name])
+    @@index([createdBy])
+}
+
+model Task {
+    // Fields
+    id          String    @id @default(uuid())
+    userId      String
+    labelId     String?
+    title       String
+    description String?
+    dueDate     DateTime?
+    isCompleted Boolean   @default(false)
+    createdAt   DateTime  @default(now())
+    updatedAt   DateTime  @default(now())
+
+    // Relations
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+    label Label? @relation(fields: [labelId], references: [id], onDelete: Cascade)
+
+    // Backward Relations
+    aiClassifications AiClassification[]
+
+    // Indexes
+    @@index([userId])
+    @@index([title])
+    @@index([dueDate])
+    @@index([isCompleted])
+}
+
+
+model AiClassification {
+    // Fields
+    id          String   @id @default(uuid())
+    taskId      String
+    suggestedLabelId String
+    modelUsed String
+    confidenceScore Float
+    createdAt   DateTime @default(now())
+
+    // Relations
+    task Task @relation(fields: [taskId], references: [id], onDelete: Cascade)
+    label Label @relation(fields: [suggestedLabelId], references: [id], onDelete: Cascade)
+
+    // Constraints
+
+    // Indexes
+    @@index([taskId])
+    @@index([suggestedLabelId])
+    @@index([confidenceScore])
+}
