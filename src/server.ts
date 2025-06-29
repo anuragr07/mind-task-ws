@@ -1,12 +1,15 @@
 // Import the Express app from app.ts
 import app from './app';
-import config from './config/config';
-
-// Define the port to listen on, defaulting to 3000 if not specified in environment variables
-const serverPort = config.server.port;
+import { errorHandler } from './middlewares/errorHandler';
 
 // Import routes
 import userRoute from './routes/userRoute';
+
+
+// Define the port to listen on, defaulting to 3000 if not specified in environment variables
+import config from './config/config';
+const serverPort = config.server.port;
+
 
 // Get request handler
 app.get('/', (req, res) => {
@@ -15,6 +18,9 @@ app.get('/', (req, res) => {
 
 // ROUTES
 app.use('/user', userRoute);
+
+// Adding ErrorHandler (must be added just before the app.listen)
+app.use(errorHandler)
 
 // Start the server and listen on the specified port
 app.listen(serverPort, async () => {

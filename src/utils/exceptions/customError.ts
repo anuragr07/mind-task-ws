@@ -14,4 +14,5 @@ export class CustomError extends Error {
 export interface IResponseError {
     message: string;
     additionalInfo: string;
+    stack: string;
 }
