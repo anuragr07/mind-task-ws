@@ -3,7 +3,8 @@ import app from './app';
 import { errorHandler } from './middlewares/errorHandler';
 
 // Import routes
-import userRoute from './routes/userRoute';
+// import userRouter from './routes/userRouter';
+import routes from './routes/routes';
 
 
 // Define the port to listen on, defaulting to 3000 if not specified in environment variables
@@ -17,7 +18,9 @@ app.get('/', (req, res) => {
 });
 
 // ROUTES
-app.use('/user', userRoute);
+// app.use('/user', userRouter);
+// This will immport all the routes from our app
+app.use(`/${config.server.prefix}`, routes)
 
 // Adding ErrorHandler (must be added just before the app.listen)
 app.use(errorHandler)
