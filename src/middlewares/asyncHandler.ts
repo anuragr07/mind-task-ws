@@ -1,12 +1,17 @@
-import { NextFunction, Request, Response } from 'express';
+import { Request, Response, NextFunction } from 'express';
 
 /**
- * Async Handler to wrap the API routes allowing for async error handling
- * @param fn Function to wrap API Endpoint
- * @returns Promisse with a catch statement
+ * Wraps an async Express route handler and ensures any errors
+ * are passed to the Express error-handling middleware via `next()`.
+ * 
+ * This avoids needing to use try/catch in every async route.
+ *
+ * @param handler - An async route function to wrap.
+ * @returns A standard Express middleware function with error forwarding.
  */
-export const asyncHandler = (fn: ( req: Request, res: Response, next: NextFunction ) => void) => {
-    ( req: Request, res: Response, next: NextFunction ) => {
-        return Promise.resolve(fn(req, res, next)).catch(next);
-    }
-}
+export const asyncHandler = (handler: (req: Request, res: Response, next: NextFunction) => Promise<any>) => {
+    return (req: Request, res: Response, next: NextFunction) => {
+        // Execute the handler and catch any errors, passing them to Express
+        return Promise.resolve(handler(req, res, next)).catch(next);
+    };
+};
