@@ -29,6 +29,7 @@ model User {
     oauthAccounts OAuthAccount[]
     labels Label[]
     tasks Task[]
+    refreshTokens RefreshToken[]
 
     // Indexes
     @@index([email])
@@ -136,4 +137,24 @@ model AiClassification {
     @@index([confidenceScore])
 
     @@map("ai_classifications")
+}
+
+model RefreshToken {
+    id               String   @id @default(uuid())
+    userId           String
+    token            String
+    createdAt        DateTime @default(now())
+    expiresAt        DateTime
+    revoked          Boolean  @default(false)
+    replacedByToken  String?
+
+    // Relations
+    user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+    // Indexes
+    @@index([userId])
+    @@index([token])
+    @@index([expiresAt])
+
+    @@map("refresh_tokens")
 }
