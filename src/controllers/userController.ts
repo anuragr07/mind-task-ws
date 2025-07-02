@@ -1,11 +1,10 @@
-import { PrismaClient } from "@prisma/client";
+import prisma from '../db/db';
 import bcrypt from 'bcrypt';
-
-const prisma = new PrismaClient();
 
 import { NextFunction, Request, Response } from "express";
 import { NotFoundError } from "../utils/exceptions/notFoundError";
 import { CustomError } from "../utils/exceptions/customError";
+import { getHashedPassword } from '../middlewares/authMiddleware';
 
 interface IUser {
     id: string;
@@ -70,21 +69,19 @@ class UserController {
             const { name, email, password } = req.body;
 
             // check if user exists with the email
-            if(await prisma.user.findUnique({ where: { email: email }})) return res.status(409).json({message: "Email is already registered"})
+            if(await prisma.user.findUnique({ where: { email: email }})) return res.status(409).json({message: "Email is already registered"});
 
-            // Define salt rounds for password hashing
-            const saltRounds = 10;
+            // TODO: If no url exists for Avatar, add random avatar url (check if this is needed on client side or server side)
 
-            // Create hashed password
-            const salt = bcrypt.genSaltSync(saltRounds);
-            const hashPassword = bcrypt.hashSync(password, salt);
+            // Hash your password
+            const passwordHash = getHashedPassword(password);
 
             // Create user
             const user = await prisma.user.create({
                 data: {
                     name,
                     email,
-                    password: hashPassword
+                    password: passwordHash
                 }
             });
 
