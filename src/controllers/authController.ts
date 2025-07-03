@@ -27,7 +27,7 @@ class AuthController {
         if (!passwordValidFlag) throw new UnauthorizedError("Email and Password do not match");
 
         // Generate and sign a JWT token
-        const token = sign
+        const accessToken = sign
         (
             {
                 userId: user.id,
@@ -55,12 +55,33 @@ class AuthController {
             }
         )
 
+        if(!(accessToken && refreshToken)) throw new CustomError("Server error. Error Signing in");
+
         // Assign this refresh token to HTTPOnly cookie
+        if (!config.refreshToken) {
+            throw new CustomError("Internal server error. Please log in again");
+        }
+        const result = res.cookie(config.refreshToken, refreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+
         // store this token in DB for validation
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
 
-        if(!token) throw new CustomError("Server error. Error Signing in");
+        prisma.refreshToken.create({
+            data: {
+                userId: user.id,
+                token: refreshToken,
+                expiresAt: expiresAt,
+            }
+        })
 
-        res.status(200).json({token: token});
+        console.log(result);
+        
+        res.status(200).json({accessToken: accessToken});
     }
 
     // Change password function

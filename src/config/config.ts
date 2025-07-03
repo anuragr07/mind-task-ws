@@ -26,9 +26,10 @@ const config = {
     server: {
         port: process.env.SERVER_PORT || 8000,
         prefix: process.env.API_PREFIX,
-    }
+    },
 
     // Other Variables
+    refreshToken: process.env.REFRESH_TOKEN,
 }
 
 export default config;
