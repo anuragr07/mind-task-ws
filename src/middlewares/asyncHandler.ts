@@ -15,3 +15,4 @@ export const asyncHandler = (handler: (req: Request, res: Response, next: NextFu
         return Promise.resolve(handler(req, res, next)).catch(next);
     };
 };
+

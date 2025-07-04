@@ -1,9 +1,7 @@
 import prisma from '../db/db';
-import bcrypt from 'bcrypt';
 
 import { NextFunction, Request, Response } from "express";
 import { NotFoundError } from "../utils/exceptions/notFoundError";
-import { CustomError } from "../utils/exceptions/customError";
 import { getHashedPassword } from '../middlewares/authMiddleware';
 
 interface IUser {

@@ -61,16 +61,15 @@ class AuthController {
         if (!config.refreshToken) {
             throw new CustomError("Internal server error. Please log in again");
         }
-        const result = res.cookie(config.refreshToken, refreshToken, {
+        res.cookie(config.refreshToken, refreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'strict',
             maxAge: 30 * 24 * 60 * 60 * 1000,
         });
 
-        // store this token in DB for validation
+        // store this token in DB for validation and rotation
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-
         prisma.refreshToken.create({
             data: {
                 userId: user.id,
@@ -78,8 +77,6 @@ class AuthController {
                 expiresAt: expiresAt,
             }
         })
-
-        console.log(result);
         
         res.status(200).json({accessToken: accessToken});
     }

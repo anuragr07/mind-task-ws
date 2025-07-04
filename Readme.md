@@ -45,3 +45,20 @@ web-services/
 ├── Dockerfile
 └── README.md
 ```
+
+# Prisma Migrations (dev)
+
+### Create Migrations:
+```
+npx prisma migrate dev
+
+// Provide the following details in the terminal
+✔ Are you sure you want to create and apply this migration? … yes
+✔ Enter a name for the new migration: … Version 2.1 - Added unique constraint to the Refresh Token table
+```
+
+| Version Number      | Description |
+| ------------------- | ----------- |
+| Version 1.0         | Initial Migration       |
+| Version 2.0         | Added Refresh Token table        |
+| Version 2.1         | Added Unique constraint to token column in Refresh Token table        |
