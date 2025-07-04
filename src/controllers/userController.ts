@@ -11,7 +11,7 @@ interface IUser {
     password?: string;
 }
 
-const generateSafeCopy = (user: IUser): IUser => {
+export const generateSafeUserCopy = (user: IUser): IUser => {
     let _user = { ...user };
     delete _user.password;
     return _user;
@@ -39,7 +39,7 @@ class UserController {
 
         if (!user) throw new NotFoundError("User not found. Wrong ID.");
 
-        const safeUser = generateSafeCopy(user as IUser);
+        const safeUser = generateSafeUserCopy(user as IUser);
         res.status(200).json(safeUser);
     }
 
@@ -51,7 +51,7 @@ class UserController {
 
         if (!user) throw new NotFoundError("No user found with this email.");
 
-        const safeUser = generateSafeCopy(user as IUser);
+        const safeUser = generateSafeUserCopy(user as IUser);
         res.status(200).json(safeUser);
     }
 

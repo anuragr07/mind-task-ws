@@ -8,5 +8,6 @@ const authRouter = Router();
 authRouter.post('/login', asyncHandler(AuthController.login));
 authRouter.post('/change-password', asyncHandler(AuthController.changePassword));
 authRouter.post('/refresh', asyncHandler(RefreshTokenController.handleRefreshToken));
+authRouter.post('/logout', asyncHandler(AuthController.logout));
 
 export default authRouter;

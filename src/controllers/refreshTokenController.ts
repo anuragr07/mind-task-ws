@@ -20,7 +20,6 @@ class RefreshTokenController {
             sameSite: 'strict',
         });
 
-
         // Check if the token exists in the database
         const foundToken = await prisma.refreshToken.findUnique({
             where: { token: refreshToken }
@@ -45,7 +44,7 @@ class RefreshTokenController {
                     if (!hackedUser) throw new ForbiddenError('No user found associated with the token');
 
                     // Delete all refresh tokens from the db related to the user
-                    const result = prisma.refreshToken.deleteMany({
+                    const result = await prisma.refreshToken.deleteMany({
                         where: { userId: hackedUser.id }
                     });
                     console.log(result);
@@ -70,10 +69,9 @@ class RefreshTokenController {
                 // Token expired
                 if (err) {
                     // Delete the token from the db
-                    const result = prisma.refreshToken.delete({
+                    await prisma.refreshToken.delete({
                         where: { token: refreshToken }
                     });
-                    console.log(result);
                 }
                 if (err || foundToken.userId !== decoded.userId) return new UnauthorizedError('Token invalid');
 
