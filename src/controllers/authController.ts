@@ -35,7 +35,7 @@ class AuthController {
             },
             config.jwt.secret!,
             {
-                expiresIn: '15m',
+                expiresIn: '15s',
                 algorithm: 'HS256',
                 audience: config.jwt.audience,
                 issuer: config.jwt.issuer,
@@ -70,7 +70,7 @@ class AuthController {
 
         // store this token in DB for validation and rotation
         const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-        prisma.refreshToken.create({
+        await prisma.refreshToken.create({
             data: {
                 userId: user.id,
                 token: refreshToken,
@@ -128,6 +128,24 @@ class AuthController {
         })
 
         res.status(200).json(response);
+    }
+
+    // Logout method
+    static logout = async (req: Request, res: Response, next: NextFunction) => {
+        // check if access token exists
+
+        // check if refresh token exists in cookie
+        // const cookies = req.cookies;
+        // if(!cookies?.refreshToken) return res.status(204).json("No token found");
+        // const refreshToken = 
+
+        // check if refresh token is in db and user exists
+        
+        // decode refresh token
+
+        // check if refresh token is valid
+
+        // delete refresh token
     }
 }
 

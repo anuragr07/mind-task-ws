@@ -11,13 +11,15 @@ class RefreshTokenController {
 
         // Get the refresh token from the cookie
         const cookies = req.cookies;
-        if (!cookies?.refreshToken) throw new UnauthorizedError('No cookies found in the request');
-        const refreshToken = cookies.refreshToken;
-        res.clearCookie('refreshToken', {
+        if (!cookies?.refresh_token) throw new UnauthorizedError('No cookies found in the request');
+        const refreshToken = cookies.refresh_token;
+
+        res.clearCookie('refresh_token', {
             httpOnly: true,
             secure: true,
             sameSite: 'strict',
         });
+
 
         // Check if the token exists in the database
         const foundToken = await prisma.refreshToken.findUnique({
@@ -123,17 +125,24 @@ class RefreshTokenController {
 
                 // store this token in DB for validation and rotation
                 const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
-                prisma.refreshToken.create({
-                    data: {
-                        userId: user.id,
-                        token: newRefreshToken,
-                        expiresAt: expiresAt,
-                    }
-                })
+                await prisma.$transaction([
+                    prisma.refreshToken.delete({
+                        where: { token: refreshToken },
+                    }),
+                    prisma.refreshToken.create({
+                        data: {
+                            userId: user.id,
+                            token: newRefreshToken,
+                            expiresAt,
+                        }
+                    })
+                ]);
 
                 // send access token
-                res.status(200).json({accessToken: accessToken});
+                res.status(200).json({ accessToken: accessToken });
             }
         )
     }
 }
+
+export default RefreshTokenController;
