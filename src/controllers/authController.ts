@@ -140,6 +140,8 @@ class AuthController {
 
         // check if refresh token exists in cookie
         const cookies = req.cookies;
+        console.log(`Cookie available at login: ${JSON.stringify(cookies)}`);
+        
         if (!cookies?.refresh_token) return res.status(204).json("No token found");
         const refreshToken = cookies.refresh_token;
 

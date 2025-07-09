@@ -35,6 +35,7 @@ class RefreshTokenController {
                 config.jwt.refreshSecret,
                 async (err: any, decoded: any) => {
                     if (err) throw new ForbiddenError('No such token found in store');
+                    console.log(`Attempted token reuse: ${refreshToken}`);
 
                     // Now its a reuse attempt
                     // Get user associated with the refresh token
@@ -50,7 +51,6 @@ class RefreshTokenController {
                     console.log(result);
                 }
             )
-
             // Throw forbidden error at the end
             throw new ForbiddenError('No such token found in store');
         }
@@ -69,9 +69,11 @@ class RefreshTokenController {
                 // Token expired
                 if (err) {
                     // Delete the token from the db
-                    await prisma.refreshToken.delete({
+                    console.log('Expired refresh token received: ');
+                    const result = await prisma.refreshToken.delete({
                         where: { token: refreshToken }
                     });
+                    console.log(`Result on database save: ${result}`);
                 }
                 if (err || foundToken.userId !== decoded.userId) return new UnauthorizedError('Token invalid');
 
