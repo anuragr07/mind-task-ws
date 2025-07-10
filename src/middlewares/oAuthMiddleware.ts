@@ -19,3 +19,13 @@ export async function getGoogleTokens(code: string) {
 
     return response.data;
 }
+
+export async function getGoogleUserInfo(accessToken: string) {
+    const response = await axios.get('https://www.googleapis.com/oauth2/v2/userinfo', {
+        headers: {
+            Authorization: `Bearer ${accessToken}`
+        }
+    });
+
+    return response.data;
+}

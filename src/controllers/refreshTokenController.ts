@@ -96,10 +96,8 @@ class RefreshTokenController {
                 if (!(accessToken && newRefreshToken)) throw new CustomError("Server error. Error Signing in");
 
                 // Assign this refresh token to HTTPOnly cookie
-                if (!config.refreshToken) {
-                    throw new CustomError("Internal server error. Please log in again");
-                }
-                res.cookie(config.refreshToken, newRefreshToken, {
+
+                res.cookie(config.refreshToken as string, newRefreshToken, {
                     httpOnly: true,
                     secure: true,
                     sameSite: 'strict',

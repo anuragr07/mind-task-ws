@@ -8,7 +8,7 @@ interface IUser {
     id: string;
     name: string;
     email: string;
-    password?: string;
+    password?: string | null;
 }
 
 export const generateSafeUserCopy = (user: IUser): IUser => {

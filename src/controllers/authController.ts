@@ -25,6 +25,7 @@ class AuthController {
         // Check if user exists
         const user = await prisma.user.findUnique({ where: { email: email } });
         if (!user) throw new NotFoundError('Email is not associated with any account.');
+        if (!user.password) throw new ClientError('Found OAuth account. Sign in using google');
 
         // Check if password is valid
         const passwordValidFlag = await bcrypt.compareSync(password, user.password);
@@ -118,6 +119,7 @@ class AuthController {
         })
 
         if (!user) throw new NotFoundError("No account exists with the provided email.");
+        if (!user.password) throw new ClientError('Found OAuth account. Sign in using google');
 
         // if correct make hash of new password
         const passwordValidFlag = await bcrypt.compare(oldPassword, user.password);
