@@ -5,6 +5,7 @@ import prisma from "../db/db";
 import { ForbiddenError } from "../utils/exceptions/forbiddenError";
 import config from "../config/config";
 import { CustomError } from "../utils/exceptions/customError";
+import { invalidateRefreshToken, issueTokens } from "../middlewares/authMiddleware";
 
 class RefreshTokenController {
     static handleRefreshToken = async (req: Request, res: Response, next: NextFunction) => {
@@ -29,32 +30,8 @@ class RefreshTokenController {
         if (!config.jwt.refreshSecret) throw new CustomError("Internal Server Error")
 
         // Detected refresh token reuse
-        if (!foundToken) {
-
-            // TODO: Create invalidateToken(token) method in middleware and encapsulate the below code
-            verify(
-                refreshToken,
-                config.jwt.refreshSecret,
-                async (err: any, decoded: any) => {
-                    if (err) throw new ForbiddenError('No such token found in store');
-                    console.log(`Attempted token reuse: ${refreshToken}`);
-
-                    // Now its a reuse attempt
-                    // Get user associated with the refresh token
-                    const hackedUser = await prisma.user.findUnique({
-                        where: { id: decoded.userId }
-                    });
-                    if (!hackedUser) throw new ForbiddenError('No user found associated with the token');
-
-                    // Delete all refresh tokens from the db related to the user
-                    const result = await prisma.refreshToken.deleteMany({
-                        where: { userId: hackedUser.id }
-                    });
-                    console.log(result);
-                }
-            )
-
-            // Throw forbidden error at the end
+        if (!foundToken) { 
+            invalidateRefreshToken(refreshToken);
             throw new ForbiddenError('No such token found in store');
         }
 
@@ -64,7 +41,6 @@ class RefreshTokenController {
         })
         if (!user) throw new ForbiddenError('No user found associated with the token');
 
-        // TODO: Create a issueTokens method and encapsulate the below
         // If token found and we have to issue new access and refresh token
         verify(
             refreshToken,
@@ -88,31 +64,34 @@ class RefreshTokenController {
 
                 // Token is still valid
                 // Generate and sign a JWT access token
-                const accessToken = sign(
-                    {
-                        userId: user.id,
-                        userEmail: user.email,
-                    },
-                    config.jwt.secret,
-                    {
-                        expiresIn: '30d',
-                        algorithm: 'HS256',
-                        audience: config.jwt.audience,
-                        issuer: config.jwt.issuer,
-                    }
-                )
 
-                // Generate new refresh token
-                const newRefreshToken = sign(
-                    { userId: user.id },
-                    config.jwt.refreshSecret!,
-                    {
-                        expiresIn: '30d',
-                        algorithm: 'HS256',
-                        audience: config.jwt.audience,
-                        issuer: config.jwt.issuer,
-                    }
-                )
+                const { accessToken, newRefreshToken } = issueTokens(user.id, user.email);
+
+                // const accessToken = sign(
+                //     {
+                //         userId: user.id,
+                //         userEmail: user.email,
+                //     },
+                //     config.jwt.secret,
+                //     {
+                //         expiresIn: '30d',
+                //         algorithm: 'HS256',
+                //         audience: config.jwt.audience,
+                //         issuer: config.jwt.issuer,
+                //     }
+                // )
+
+                // // Generate new refresh token
+                // const newRefreshToken = sign(
+                //     { userId: user.id },
+                //     config.jwt.refreshSecret!,
+                //     {
+                //         expiresIn: '30d',
+                //         algorithm: 'HS256',
+                //         audience: config.jwt.audience,
+                //         issuer: config.jwt.issuer,
+                //     }
+                // )
 
                 if (!(accessToken && newRefreshToken)) throw new CustomError("Server error. Error Signing in");
 
