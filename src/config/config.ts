@@ -2,7 +2,7 @@
 import dotenv from 'dotenv';
 
 try {
-    const result = dotenv.config(); 
+    const result = dotenv.config();
 } catch (error) {
     console.log("Error while configuring dotenv.");
 }
@@ -33,12 +33,15 @@ const config = {
         clientId: process.env.GOOGLE_CLIENT_ID,
         clientSecret: process.env.GOOGLE_CLIENT_SECRET,
         redirectUri: process.env.GOOGLE_REDIRECT_URI,
+        authUrl: process.env.GOOGLE_AUTH_URL,
+        tokenUrl: process.env.GOOGLE_TOKEN_URL,
     },
 
     github: {
         clientId: process.env.GITHUB_CLIENT_ID,
         clientSecret: process.env.GITHUB_CLIENT_SECRET,
         redirectUri: process.env.GITHUB_REDIRECT_URI,
+        authUrl: process.env.GITHUB_AUTH_URL,
     },
 
     // Other Variables

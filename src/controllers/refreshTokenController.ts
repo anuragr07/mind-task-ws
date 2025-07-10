@@ -30,6 +30,8 @@ class RefreshTokenController {
 
         // Detected refresh token reuse
         if (!foundToken) {
+
+            // TODO: Create invalidateToken(token) method in middleware and encapsulate the below code
             verify(
                 refreshToken,
                 config.jwt.refreshSecret,
@@ -51,6 +53,7 @@ class RefreshTokenController {
                     console.log(result);
                 }
             )
+
             // Throw forbidden error at the end
             throw new ForbiddenError('No such token found in store');
         }
@@ -61,6 +64,7 @@ class RefreshTokenController {
         })
         if (!user) throw new ForbiddenError('No user found associated with the token');
 
+        // TODO: Create a issueTokens method and encapsulate the below
         // If token found and we have to issue new access and refresh token
         verify(
             refreshToken,
