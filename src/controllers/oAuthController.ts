@@ -6,6 +6,7 @@ import { ClientError } from "../utils/exceptions/clientError";
 import { getGoogleTokens, getGoogleUserInfo } from "../middlewares/oAuthMiddleware";
 import { CustomError } from "../utils/exceptions/customError";
 import { issueTokens } from "../middlewares/authMiddleware";
+import { generateSafeUserCopy } from "./userController";
 
 class OAuthController {
 
@@ -13,11 +14,13 @@ class OAuthController {
     static login = async (req: Request, res: Response, next: NextFunction) => {
 
         // check if any previous refresh token exist
-        const cookies = req.cookies;
+        const oldRefreshToken = req.cookies?.refresh_token;
+        let foundToken;
+        if(oldRefreshToken){foundToken = await prisma.refreshToken.findUnique({ where: {token: oldRefreshToken}})} 
 
         // clear and delete the refresh token
-        if (cookies?.refresh_token) await prisma.refreshToken.delete({ where: { token: cookies.refresh_token } });
-        if (cookies?.refresh_token) res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict', secure: true });
+        if (foundToken) await prisma.refreshToken.delete({ where: { token: foundToken.token } });
+        if (oldRefreshToken) res.clearCookie('refresh_token', { httpOnly: true, sameSite: 'strict', secure: true });
 
         // check the provider and get the provider config
         const { provider } = req.params;
@@ -25,8 +28,6 @@ class OAuthController {
         if (provider === 'google') providerConfig = config.google;
         else if (provider === 'github') providerConfig = config.github
         else throw new NotFoundError('provider not found');
-
-        console.log(providerConfig);
 
         // get the the providers client id, and other stuff needed for login
         const clientId = providerConfig?.clientId as string;
@@ -54,12 +55,11 @@ class OAuthController {
 
         if (!code) new ClientError('No code received');
 
+
         // Get access and refresh token from google
-        const response = await getGoogleTokens(code as string);
-        const data = response.data;
+        const data = await getGoogleTokens(code as string);
         const googleAccessToken = data.access_token;
-        const googleRefreshToken = data.refresh_token;
-        const googleExpiresIn = data.expres_in;
+        const googleExpiresIn = data.expires_in;
 
         // check if old refresh token exists in cookie
         const oldRefreshToken = req.cookies?.refresh_token;
@@ -73,18 +73,6 @@ class OAuthController {
         const userInfo = await getGoogleUserInfo(googleAccessToken);
         if (!userInfo) throw new NotFoundError("Cannot get user info. Login again.");
 
-        /*
-        {
-            "id": "112345678901234567890",
-            "email": "john.doe@gmail.com",
-            "verified_email": true,
-            "name": "John Doe",
-            "given_name": "John",
-            "family_name": "Doe",
-            "picture": "https://lh3.googleusercontent.com/a-/AOh14Gh9...",
-            "locale": "en"
-        }
-        */
         // check if user exists then get info
         let user = await prisma.user.findUnique({ where: { email: userInfo.email as string } });
 
@@ -107,7 +95,7 @@ class OAuthController {
                     provider: "google",
                     providerAccountId: userInfo.id,
                     userId: user.id,
-                    expiresAt: new Date() + googleExpiresIn,
+                    expiresAt: new Date(Date.now() + 30 * 24 * 60 * 60 * 1000),
                 }
             })
 
@@ -131,7 +119,7 @@ class OAuthController {
         });
 
         // store refresh token in http only token
-        res.cookie(config.refreshToken as string, newRefreshToken, {
+        const result = res.cookie(config.refreshToken as string, newRefreshToken, {
             httpOnly: true,
             secure: true,
             sameSite: 'strict',
@@ -139,7 +127,7 @@ class OAuthController {
         });
 
         // send response containing the access token
-        res.status(200).json({ accessToken: accessToken });
+        res.status(200).json({ accessToken: accessToken, user: generateSafeUserCopy(user) });
     }
 }
 

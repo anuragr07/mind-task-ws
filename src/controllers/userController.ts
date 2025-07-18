@@ -3,6 +3,8 @@ import prisma from '../db/db';
 import { NextFunction, Request, Response } from "express";
 import { NotFoundError } from "../utils/exceptions/notFoundError";
 import { getHashedPassword } from '../middlewares/authMiddleware';
+import config from '../config/config';
+import { sign } from 'jsonwebtoken';
 
 interface IUser {
     id: string;
@@ -64,9 +66,7 @@ class UserController {
         // check if user exists with the email
         if (await prisma.user.findUnique({ where: { email: email } })) return res.status(409).json({ message: "Email is already registered" });
 
-        // TODO: If no url exists for Avatar, add random avatar url (check if this is needed on client side or server side)
-
-        // Hash your password
+        // create hashed password
         const passwordHash = getHashedPassword(password);
 
         // Create user
@@ -79,6 +79,33 @@ class UserController {
         });
 
         // TODO: add user login here
+        // Generate and sign a JWT token
+        const accessToken = sign(
+            {
+                userId: user.id,
+                userEmail: user.email
+            },
+            config.jwt.secret!,
+            {
+                expiresIn: '15s',
+                algorithm: 'HS256',
+                audience: config.jwt.audience,
+                issuer: config.jwt.issuer,
+            }
+        )
+
+        // Generate referesh token
+        const newRefreshToken = sign(
+            { userId: user.id },
+            config.jwt.refreshSecret!,
+            {
+                expiresIn: '30d',
+                algorithm: 'HS256',
+                audience: config.jwt.audience,
+                issuer: config.jwt.issuer,
+            }
+        )
+
         // Send JWT token, refresh token
         // Set httponly cookie with the token
 

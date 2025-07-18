@@ -7,11 +7,87 @@ import { ClientError } from "../utils/exceptions/clientError";
 import { NotFoundError } from "../utils/exceptions/notFoundError";
 import { UnauthorizedError } from "../utils/exceptions/unauthorizedError";
 import { CustomError } from "../utils/exceptions/customError";
-import { authenticateToken, getHashedPassword } from "../middlewares/authMiddleware";
+import { authenticateToken, getHashedPassword, issueTokens } from "../middlewares/authMiddleware";
 import { ForbiddenError } from "../utils/exceptions/forbiddenError";
 import { generateSafeUserCopy } from "./userController";
+import { generate, count } from "random-words";
 
 class AuthController {
+
+    // register user
+    static register = async (req: Request, res: Response, next: NextFunction) => {
+
+        // check for cookies (refresh_token)
+        // clear and delete refresh_token if cookies exist
+        const cookies = req.cookies;
+        const oldRefreshToken = cookies?.refresh_token;
+        if (cookies?.refresh_token) {
+            res.clearCookie('refresh_token', {
+                httpOnly: true,
+                secure: true,
+                sameSite: 'strict',
+            });
+
+            await prisma.refreshToken.delete({
+                where: {
+                    token: cookies?.refresh_token
+                }
+            });
+        }
+
+        // get email, name, password from body
+        // Deconstruct body
+        const { name, email, password } = req.body;
+        if (!name && !email && !password) throw new ClientError("Please provide all required credentials to register.");
+
+        // check if user exists with the email
+        if (await prisma.user.findUnique({ where: { email: email } })) return res.status(409).json({ message: "Email is already registered" });
+
+        // TODO: If no url exists for Avatar, add random avatar url (check if this is needed on client side or server side)
+        const randomWordForAvatar = generate({ exactly: 2, join: "-" });
+        const randomAvatarUrl = `https://robohash.org/${randomWordForAvatar}`;
+
+        // create hashed password
+        const passwordHash = getHashedPassword(password);
+
+        // create new user object
+        const newUser = {
+            name: name,
+            email: email,
+            password: passwordHash,
+            avatarUrl: randomAvatarUrl
+        }
+
+        // save user in user table
+        const savedUser = await prisma.user.create({
+            data: newUser
+        })
+
+        // login user
+        if (!savedUser) throw new CustomError("Unable to create user");
+
+        // issue tokens
+        const { accessToken, newRefreshToken } = issueTokens(savedUser.id, savedUser.email);
+
+        // save refresh token in cookie and db
+        res.cookie(config.refreshToken as string, newRefreshToken, {
+            httpOnly: true,
+            secure: true,
+            sameSite: 'strict',
+            maxAge: 30 * 24 * 60 * 60 * 1000,
+        });
+
+        const expiresAt = new Date(Date.now() + 30 * 24 * 60 * 60 * 1000)
+        await prisma.refreshToken.create({
+            data: {
+                userId: savedUser.id,
+                token: newRefreshToken,
+                expiresAt,
+            }
+        })
+        // send access token in response
+        res.status(200).json({ accessToken: accessToken, user: generateSafeUserCopy(savedUser) });
+    }
 
     // Login method
     static login = async (req: Request, res: Response, next: NextFunction) => {
@@ -143,7 +219,7 @@ class AuthController {
         // check if refresh token exists in cookie
         const cookies = req.cookies;
         console.log(`Cookie available at login: ${JSON.stringify(cookies)}`);
-        
+
         if (!cookies?.refresh_token) return res.status(204).json("No token found");
         const refreshToken = cookies.refresh_token;
 
@@ -176,6 +252,13 @@ class AuthController {
             where: { token: refreshToken }
         })
         res.status(200).json({ message: "Logout successful" });
+    }
+
+    // Authenticate request method
+    static authenticateRequest = async (req: Request, res: Response, next: NextFunction) => {
+        const authHeader = req.headers['authorization'];
+        if (!authHeader) throw new UnauthorizedError("No token found. Please provide token.");
+        authenticateToken(authHeader);
     }
 }
 
